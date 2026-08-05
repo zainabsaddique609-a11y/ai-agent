@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #12100e; color: #e5e7eb; }
+        .chat-glow { box-shadow: 0 0 25px rgba(99, 102, 241, 0.15); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+    <header class="border-b border-stone-800 p-4 bg-[#1a1714]">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide text-indigo-400">Autonomous AI Agent</h1>
+            <span class="text-xs px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">Two-File Setup Active</span>
+        </div>
+    </header>
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 flex flex-col justify-between">
+        <div id="chat-box" class="flex-1 overflow-y-auto space-y-4 pr-2 mb-4 max-h-[65vh]">
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">AI</div>
+                <div class="bg-[#1e1a17] border border-stone-800 p-4 rounded-2xl max-w-[80%] text-sm chat-glow">
+                    Hello! Frontend and backend are successfully connected in one folder. Type a message!
+                </div>
+            </div>
+        </div>
+        <div class="bg-[#1a1714] border border-stone-800 p-3 rounded-2xl chat-glow flex items-center space-x-2">
+            <input type="text" id="user-input" placeholder="Type a message or instruction..." 
+                class="flex-1 bg-transparent border-none outline-none text-stone-200 px-3 text-sm placeholder-stone-500"
+                onkeypress="if(event.key === 'Enter') sendPrompt()">
+            <button onclick="sendPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition duration-200">
+                Send
+            </button>
+        </div>
+    </main>
+    <footer class="text-center py-3 text-xs text-stone-500 border-t border-stone-900">
+        Full-Stack Assignment Template &bull; FastAPI + HTML
+    </footer>
+    <script>
+        async function sendPrompt() {
+            const inputField = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+            const promptText = inputField.value.trim();
+            if (!promptText) return;
+
+            chatBox.innerHTML += `
+                <div class="flex items-start justify-end space-x-3">
+                    <div class="bg-indigo-900/60 border border-indigo-700/50 p-4 rounded-2xl max-w-[80%] text-sm text-stone-100">${escapeHtml(promptText)}</div>
+                    <div class="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center font-bold text-white text-sm">You</div>
+                </div>
+            `;
+            inputField.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loadingId}" class="flex items-start space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">AI</div>
+                    <div class="bg-[#1e1a17] border border-stone-800 p-4 rounded-2xl text-sm text-stone-400 animate-pulse">Agent is thinking...</div>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch('/api/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: promptText })
+                });
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">AI</div>
+                        <div class="bg-[#1e1a17] border border-stone-800 p-4 rounded-2xl max-w-[80%] text-sm chat-glow whitespace-pre-wrap">${escapeHtml(data.response)}</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center font-bold text-white text-sm">!</div>
+                        <div class="bg-red-950/40 border border-red-900 p-4 rounded-2xl text-sm text-red-300">Connection error.</div>
+                    </div>
+                `;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
